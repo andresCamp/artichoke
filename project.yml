@@ -62,7 +62,10 @@ targets:
         INFOPLIST_FILE: Config/Extension-Info.plist
         CODE_SIGN_ENTITLEMENTS: Config/Extension.entitlements
         PROVISIONING_PROFILE_SPECIFIER: "DevID dev.serdna.artichoke.filter"
-        PRODUCT_NAME: ArtichokeFilter
+        # A NetworkExtension system extension's executable name MUST equal its
+        # bundle identifier (sysextd matches service path to bundle id, else it
+        # rejects with the generic "cannot allow apps outside /Applications").
+        PRODUCT_NAME: "$(PRODUCT_BUNDLE_IDENTIFIER)"
         # No main symbol: a NetworkExtension provider's entry point is
         # _NSExtensionMain (supplied by the NetworkExtension framework).
         # XcodeGen's system-extension product type doesn't inject it the way

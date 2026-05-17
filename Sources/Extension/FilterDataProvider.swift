@@ -20,6 +20,11 @@ final class FilterDataProvider: NEFilterDataProvider, @unchecked Sendable {
     // MARK: Lifecycle
 
     override func startFilter(completionHandler: @escaping (Error?) -> Void) {
+        // Vend the XPC listener so the app can connect as the client and
+        // receive discovered apps + usage. The app cannot own the Mach
+        // service, so the provider must be the listener.
+        ipc.start()
+
         // Empty rule set + .filterData default ⇒ every flow is handed to
         // handleNewFlow, where the real per-app decision happens.
         let settings = NEFilterSettings(rules: [], defaultAction: .filterData)
