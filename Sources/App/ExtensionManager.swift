@@ -3,7 +3,8 @@ import SystemExtensions
 import os
 
 /// Installs / activates the embedded network system extension. macOS prompts
-/// the user the first time ("Allow in System Settings ▸ Privacy & Security").
+/// the user the first time (macOS 15+: System Settings ▸ General ▸ Login
+/// Items & Extensions).
 final class ExtensionManager: NSObject, OSSystemExtensionRequestDelegate,
                               @unchecked Sendable {
     static let shared = ExtensionManager()
@@ -39,7 +40,7 @@ final class ExtensionManager: NSObject, OSSystemExtensionRequestDelegate,
 
     func requestNeedsUserApproval(_ request: OSSystemExtensionRequest) {
         log.info("awaiting user approval in System Settings")
-        onStateChange?("Approve in System Settings ▸ Privacy & Security")
+        onStateChange?("Approve in System Settings ▸ General ▸ Login Items & Extensions")
     }
 
     func request(_ request: OSSystemExtensionRequest,

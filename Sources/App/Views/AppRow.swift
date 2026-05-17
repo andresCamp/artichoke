@@ -28,6 +28,7 @@ struct AppRow: View {
             Toggle("", isOn: Binding(get: { app.allowed },
                                      set: { onToggle($0) }))
                 .toggleStyle(.checkbox).labelsHidden()
+                .accessibilityLabel("Allow \(app.name)")
 
             Image(nsImage: icon).resizable()
                 .frame(width: 28, height: 28)
@@ -36,6 +37,16 @@ struct AppRow: View {
                 HStack {
                     Text(app.name).lineLimit(1)
                         .foregroundStyle(app.allowed ? .primary : .secondary)
+                    if !app.allowed {
+                        Text("Blocked")
+                            .font(.caption2.weight(.medium))
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 1)
+                            .background(.secondary.opacity(0.15),
+                                        in: Capsule())
+                            .accessibilityHidden(true)
+                    }
                     Spacer()
                     if mode == .live {
                         Text("↓ \(AppState.fmt(rate?.inBps ?? 0))/s")
@@ -54,7 +65,8 @@ struct AppRow: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 4)
-        .opacity(app.allowed ? 1 : 0.55)
+        // De-emphasis only; "Blocked" badge is the primary, non-color signal.
+        .opacity(app.allowed ? 1 : 0.7)
     }
 
     /// Bar is relative to a soft 50 MB ceiling so small apps stay visible.

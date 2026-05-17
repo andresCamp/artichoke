@@ -9,6 +9,10 @@ import AppKit
 @MainActor
 @Observable
 final class AppState {
+    /// Single shared instance — the menu-bar Scene and the app delegate's
+    /// launch hook must operate on the same model.
+    static let shared = AppState()
+
     // Ruleset / state mirrored into the shared store.
     var enabled = false { didSet { persist() } }
     var allowUnknownByDefault = false { didSet { persist() } }

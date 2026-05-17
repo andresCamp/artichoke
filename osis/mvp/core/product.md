@@ -122,6 +122,16 @@ or a network analytics dashboard. It is not a TripMode feature-parity project;
 TripMode is the reference point for three jobs, not a spec to match. It does
 not persist usage history, schedule rules, or run on iOS.
 
+## Distribution & Model
+
+Source-available under PolyForm Noncommercial 1.0.0: free to build from source
+for personal, non-commercial use, forever. The official build is Developer-ID
+signed and notarized and is sold from the developer's own site for $10
+one-time, perpetual, with no subscription, account, or telemetry. It is not on
+the Mac App Store and cannot be: a NetworkExtension content-filter system
+extension requires Developer ID distribution, the same constraint that keeps
+TripMode and Little Snitch off the store.
+
 ---
 
 *2026-05-17*
@@ -130,4 +140,5 @@ not persist usage history, schedule rules, or run on iOS.
 
 ## Sessions
 
+- 2026-05-17 — Non-commercial license + paid-binary model: manifesto reconciled, strategy.md created · `claude -r 5f0d9ee9-4359-4cbc-8d56-539a114c4fad`
 - 2026-05-17 — Initial capture from build session · `claude -r 5f0d9ee9-4359-4cbc-8d56-539a114c4fad`

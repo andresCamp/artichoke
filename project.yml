@@ -63,3 +63,10 @@ targets:
         CODE_SIGN_ENTITLEMENTS: Config/Extension.entitlements
         PROVISIONING_PROFILE_SPECIFIER: "DevID dev.serdna.artichoke.filter"
         PRODUCT_NAME: ArtichokeFilter
+        # No main symbol: a NetworkExtension provider's entry point is
+        # _NSExtensionMain (supplied by the NetworkExtension framework).
+        # XcodeGen's system-extension product type doesn't inject it the way
+        # Apple's Xcode template does, so set it explicitly.
+        OTHER_LDFLAGS: "-e _NSExtensionMain"
+        # Apple Silicon host; arm64-only system extension is fully supported.
+        EXCLUDED_ARCHS: x86_64

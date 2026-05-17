@@ -16,6 +16,7 @@
     ],
     "mvp": {
       "changelog": "osis/mvp/changelog.md",
+      "strategy": "osis/mvp/strategy.md",
       "systems": {
         "core": {
           "product": "osis/mvp/core/product.md",

@@ -51,21 +51,31 @@ struct MenuView: View {
                                      set: { state.setEnabled($0) }))
                 .toggleStyle(.switch)
                 .labelsHidden()
+                .accessibilityLabel("Data filtering")
 
             Spacer()
 
             VStack(spacing: 2) {
-                Text(AppState.fmt(state.totalBytes))
-                    .font(.title2.weight(.semibold))
-                    .foregroundStyle(state.capReached ? .red : .primary)
+                HStack(spacing: 4) {
+                    if state.capReached {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.red)
+                            .help("Data cap reached — all traffic blocked")
+                            .accessibilityLabel("Data cap reached")
+                    }
+                    Text(AppState.fmt(state.totalBytes))
+                        .font(.title2.weight(.semibold))
+                        .foregroundStyle(state.capReached ? .red : .primary)
+                }
                 Picker("", selection: $mode) {
                     ForEach(ViewMode.allCases, id: \.self) {
                         Text($0.rawValue).tag($0)
                     }
                 }
-                .pickerStyle(.menu)
+                .pickerStyle(.segmented)
                 .labelsHidden()
                 .fixedSize()
+                .accessibilityLabel("View mode")
             }
 
             Spacer()
@@ -74,6 +84,8 @@ struct MenuView: View {
                 Image(systemName: "ellipsis.circle")
             }
             .buttonStyle(.plain)
+            .contentShape(Rectangle())
+            .accessibilityLabel("Settings")
         }
         .padding(12)
     }
@@ -108,5 +120,6 @@ struct MenuView: View {
         }
         .padding(12)
         .font(.callout)
+        .toggleStyle(.checkbox)
     }
 }

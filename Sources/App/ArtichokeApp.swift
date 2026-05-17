@@ -2,7 +2,13 @@ import SwiftUI
 
 @main
 struct ArtichokeApp: App {
-    @State private var state = AppState()
+    // Bootstrap must run from a real launch hook, not App.init(): reading
+    // @State in App.init() is unsupported by SwiftUI (state graph not yet
+    // connected), so the bootstrap there never ran — the system extension
+    // was never requested. applicationDidFinishLaunching is the correct,
+    // run-loop-ready place to call OSSystemExtensionManager.
+    @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+    @State private var state = AppState.shared
 
     var body: some Scene {
         // Documented initializer (Apple): pass an asset-catalog image name so
@@ -16,9 +22,10 @@ struct ArtichokeApp: App {
         }
         .menuBarExtraStyle(.window)
     }
+}
 
-    init() {
-        let s = state
-        Task { @MainActor in s.bootstrap() }
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        Task { @MainActor in AppState.shared.bootstrap() }
     }
 }

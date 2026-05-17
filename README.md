@@ -1,7 +1,8 @@
 # Artichoke
 
-An open-source, per-app data firewall for macOS — a focused clone of TripMode's
-three features that matter on a metered hotspot:
+A source-available, per-app data firewall for macOS — a focused, open
+alternative to TripMode, covering the three things that matter on a metered
+hotspot:
 
 - **Per-app firewall** — every app is listed; only the ones you tick get
   network access, everything else is dropped.
@@ -12,7 +13,20 @@ three features that matter on a metered hotspot:
 - **Auto-on for hotspots** — when macOS reports an expensive/tethered link
   (Personal Hotspot), the filter switches itself on.
 
-MIT licensed.
+## License & how to get it
+
+Source-available under the [PolyForm Noncommercial 1.0.0](LICENSE) license:
+read it, build it, and use it yourself for any non-commercial purpose, free,
+forever. You may not sell it or use it commercially.
+
+- **Build it yourself** — clone, follow the build steps below, run it. Free.
+- **Official build — $10 once** — a signed, notarized, auto-updating binary
+  from [the project site]. One-time, perpetual. No subscription, no account,
+  no telemetry. It just pays for the work.
+
+Not on the Mac App Store, and it can't be: Artichoke is a NetworkExtension
+*system extension*, which Apple distributes via Developer ID + notarization
+only (the same reason TripMode and Little Snitch aren't on the App Store).
 
 ## How it works
 
