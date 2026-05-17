@@ -12,6 +12,10 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>CFBundlePackageType</key>
 	<string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
+	<!-- macOS requires this on the extension bundle itself for the
+	     network_extension category (OSSystemExtensionError code 9). -->
+	<key>NSSystemExtensionUsageDescription</key>
+	<string>Artichoke installs a network filter extension so it can monitor and block per-app data use on metered connections.</string>
 	<key>NetworkExtension</key>
 	<dict>
 		<key>NEProviderClasses</key>
@@ -19,6 +23,10 @@
 			<key>com.apple.networkextension.filter-data</key>
 			<string>$(PRODUCT_MODULE_NAME).FilterDataProvider</string>
 		</dict>
+		<!-- Authorizes the provider to vend an NSXPCListener on this Mach
+		     name (== App Group id). The app connects to it as the client. -->
+		<key>NEMachServiceName</key>
+		<string>$(TeamIdentifierPrefix)dev.serdna.artichoke</string>
 	</dict>
 </dict>
 </plist>

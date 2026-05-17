@@ -21,5 +21,9 @@
 	<true/>
 	<key>NSHumanReadableCopyright</key>
 	<string>$(INFOPLIST_KEY_NSHumanReadableCopyright)</string>
+	<!-- Required by macOS before a network_extension-category system
+	     extension may be activated (OSSystemExtensionError code 9). -->
+	<key>NSSystemExtensionUsageDescription</key>
+	<string>Artichoke installs a network filter extension so it can monitor and block per-app data use on metered connections.</string>
 </dict>
 </plist>
