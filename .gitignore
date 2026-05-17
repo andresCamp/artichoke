@@ -1,0 +1,14 @@
+# Xcode / generated
+*.xcodeproj/
+*.xcworkspace/
+DerivedData/
+build/
+.build/
+*.xcuserstate
+xcuserdata/
+
+# macOS
+.DS_Store
+
+# Local signing overrides
+*.local.xcconfig

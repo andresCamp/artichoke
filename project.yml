@@ -1,0 +1,55 @@
+name: HotspotGuard
+
+options:
+  bundleIdPrefix: dev.serdna.hotspotguard
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Set your Apple Developer Team ID here once. Find it with:
+#   security find-identity -v -p codesigning      (the 10-char ID in the cert)
+#   or Xcode ▸ Settings ▸ Accounts ▸ your team.
+# Everything else (app group, XPC mach service) derives from the signing team
+# at runtime, so this is the ONLY place you edit.
+# ─────────────────────────────────────────────────────────────────────────────
+settings:
+  base:
+    DEVELOPMENT_TEAM: YOUR_TEAM_ID
+    CODE_SIGN_STYLE: Automatic
+    CODE_SIGN_IDENTITY: "Developer ID Application"
+    ENABLE_HARDENED_RUNTIME: true
+    SWIFT_VERSION: "6.0"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    INFOPLIST_KEY_NSHumanReadableCopyright: "Open source — MIT"
+
+targets:
+  HotspotGuard:
+    type: application
+    platform: macOS
+    sources:
+      - Sources/App
+      - Sources/Shared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.serdna.hotspotguard
+        INFOPLIST_FILE: Config/App-Info.plist
+        CODE_SIGN_ENTITLEMENTS: Config/App.entitlements
+        ENABLE_APP_SANDBOX: false   # Developer ID firewall app runs unsandboxed
+    dependencies:
+      - target: HotspotGuardFilter
+        embed: true                 # system extension embedded in Contents/Library/SystemExtensions
+
+  HotspotGuardFilter:
+    type: app-extension            # NetworkExtension system extension
+    platform: macOS
+    sources:
+      - Sources/Extension
+      - Sources/Shared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.serdna.hotspotguard.filter
+        INFOPLIST_FILE: Config/Extension-Info.plist
+        CODE_SIGN_ENTITLEMENTS: Config/Extension.entitlements
+        PRODUCT_NAME: HotspotGuardFilter
