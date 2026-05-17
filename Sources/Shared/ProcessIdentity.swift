@@ -21,20 +21,37 @@ enum ProcessIdentity {
 
     static func resolve(pid: Int) -> Resolved {
         if let appURL = appBundleInChain(pid) {
-            let b = Bundle(url: appURL)
-            let id = canonicalID(
-                b?.bundleIdentifier ?? appURL.lastPathComponent)
-            let name = (b?.object(forInfoDictionaryKey:
-                            "CFBundleDisplayName") as? String)
-                ?? (b?.object(forInfoDictionaryKey: "CFBundleName")
-                            as? String)
-                ?? FileManager.default.displayName(atPath: appURL.path)
-                    .replacingOccurrences(of: ".app", with: "")
-            return Resolved(id: id, name: name, path: appURL.path)
+            return identity(forAppBundle: appURL)
         }
         let n = procName(pid) ?? "pid\(pid)"
         return Resolved(id: "proc:\(n)", name: n,
                         path: executablePath(pid) ?? "")
+    }
+
+    /// Resolve from an executable path (used when only a path is available,
+    /// e.g. the extension's audit-token fallback). Same id scheme as
+    /// `resolve(pid:)` so both code paths agree.
+    static func resolve(execPath: String) -> Resolved {
+        if let appURL = enclosingAppBundle(execPath) {
+            return identity(forAppBundle: appURL)
+        }
+        let n = URL(fileURLWithPath: execPath).lastPathComponent
+        return Resolved(id: n.isEmpty ? "proc:unknown" : "proc:\(n)",
+                        name: n, path: execPath)
+    }
+
+    /// **The id is the `.app` bundle path** — a string both the unsandboxed
+    /// app and the sandboxed extension observe identically. It must NOT
+    /// depend on reading `Info.plist` (the extension's sandbox blocks that,
+    /// which is exactly what made a verdict and a checkbox disagree). The
+    /// bundle id / display name are cosmetic and best-effort only.
+    private static func identity(forAppBundle url: URL) -> Resolved {
+        let b = Bundle(url: url)
+        let name = (b?.object(forInfoDictionaryKey:
+                        "CFBundleDisplayName") as? String)
+            ?? (b?.object(forInfoDictionaryKey: "CFBundleName") as? String)
+            ?? url.deletingPathExtension().lastPathComponent
+        return Resolved(id: url.path, name: name, path: url.path)
     }
 
     /// Per-process label for an app's expanded breakdown — `comm`

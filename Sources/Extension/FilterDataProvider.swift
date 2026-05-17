@@ -43,7 +43,14 @@ final class FilterDataProvider: NEFilterDataProvider, @unchecked Sendable {
             }
             return (r.id, r.name, r.path)
         }
+        // No pid from the token → fall back to code-signing resolution,
+        // but re-key it through the SAME path-derived scheme so it still
+        // matches the app's ruleset.
         let a = AppResolver.resolve(auditToken: token)
+        if !a.path.isEmpty {
+            let r = ProcessIdentity.resolve(execPath: a.path)
+            return (r.id, r.name, r.path)
+        }
         return (a.id, a.name, a.path)
     }
 
@@ -98,9 +105,10 @@ final class FilterDataProvider: NEFilterDataProvider, @unchecked Sendable {
         }
 
         guard doc.isAllowed(app.id) else {
-            log.debug("DROP \(app.name, privacy: .public)")
+            log.info("DROP \(app.name, privacy: .public) [\(app.id, privacy: .public)]")
             return .drop()
         }
+        log.info("ALLOW \(app.name, privacy: .public) [\(app.id, privacy: .public)]")
 
         // Allowed: keep the flow in-path with peeking so we can meter bytes.
         flowLock.lock()
