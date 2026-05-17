@@ -15,8 +15,8 @@ options:
 # ─────────────────────────────────────────────────────────────────────────────
 settings:
   base:
-    DEVELOPMENT_TEAM: YOUR_TEAM_ID
-    CODE_SIGN_STYLE: Automatic
+    DEVELOPMENT_TEAM: P62A3QS593
+    CODE_SIGN_STYLE: Manual
     CODE_SIGN_IDENTITY: "Developer ID Application"
     ENABLE_HARDENED_RUNTIME: true
     SWIFT_VERSION: "6.0"
@@ -34,15 +34,24 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: dev.serdna.artichoke
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         INFOPLIST_FILE: Config/App-Info.plist
         CODE_SIGN_ENTITLEMENTS: Config/App.entitlements
+        PROVISIONING_PROFILE_SPECIFIER: "DevID dev.serdna.artichoke"
         ENABLE_APP_SANDBOX: false   # Developer ID firewall app runs unsandboxed
     dependencies:
       - target: ArtichokeFilter
         embed: true                 # system extension embedded in Contents/Library/SystemExtensions
 
   ArtichokeFilter:
-    type: app-extension            # NetworkExtension system extension
+    type: system-extension         # NEFilterDataProvider, activated via
+                                   # OSSystemExtensionRequest. Packaged as
+                                   # .systemextension in Contents/Library/
+                                   # SystemExtensions (sysextd only scans
+                                   # there). No main.swift: entry point is
+                                   # the NetworkExtension → NEProviderClasses
+                                   # principal class (NSExtensionMain
+                                   # semantics, same as the appex form).
     platform: macOS
     sources:
       - Sources/Extension
@@ -52,4 +61,5 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: dev.serdna.artichoke.filter
         INFOPLIST_FILE: Config/Extension-Info.plist
         CODE_SIGN_ENTITLEMENTS: Config/Extension.entitlements
+        PROVISIONING_PROFILE_SPECIFIER: "DevID dev.serdna.artichoke.filter"
         PRODUCT_NAME: ArtichokeFilter

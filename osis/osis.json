@@ -1,0 +1,30 @@
+{
+  "protocolShape": "1.0",
+  "type": "product",
+  "product": "artichoke",
+  "activeVersion": "mvp",
+  "anonId": "3d65fc3e-c1cc-4f74-846c-70454c5e40fe",
+  "createdAt": "2026-05-17T08:29:05Z",
+  "lastTwinUpdate": null,
+  "files": {
+    "twin": "osis/twin.md",
+    "sessions": "osis/sessions.md",
+    "manifesto": "osis/manifesto.md",
+    "inbox": [
+      "osis/inbox/readme-product-framing.md",
+      "osis/inbox/codebase-architecture.md"
+    ],
+    "mvp": {
+      "changelog": "osis/mvp/changelog.md",
+      "systems": {
+        "core": {
+          "product": "osis/mvp/core/product.md",
+          "iterations": {
+            "iteration-1--make-filtering-real": "osis/mvp/core/iteration-1--make-filtering-real/brief.md"
+          }
+        }
+      }
+    }
+  },
+  "modules": {}
+}

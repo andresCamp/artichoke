@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>method</key>
+	<string>developer-id</string>
+	<key>teamID</key>
+	<string>P62A3QS593</string>
+	<key>signingStyle</key>
+	<string>manual</string>
+	<key>signingCertificate</key>
+	<string>Developer ID Application</string>
+	<key>destination</key>
+	<string>export</string>
+	<key>provisioningProfiles</key>
+	<dict>
+		<key>dev.serdna.artichoke</key>
+		<string>DevID dev.serdna.artichoke</string>
+		<key>dev.serdna.artichoke.filter</key>
+		<string>DevID dev.serdna.artichoke.filter</string>
+	</dict>
+</dict>
+</plist>
