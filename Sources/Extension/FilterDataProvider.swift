@@ -1,5 +1,6 @@
 import Foundation
 import NetworkExtension
+import Darwin
 import os
 
 /// The content-filter system extension. Apple calls `handleNewFlow` for every
@@ -16,6 +17,48 @@ final class FilterDataProvider: NEFilterDataProvider, @unchecked Sendable {
     /// flow UUID → resolved app id, so data callbacks know who to bill.
     private var flowApp: [UUID: String] = [:]
     private let flowLock = NSLock()
+
+    /// audit token → resolved identity. `handleNewFlow` is hot and the
+    /// parent-chain walk is not free; flows from the same process repeat
+    /// constantly, so memoize. Keyed on the token (pid is reused).
+    private var idCache: [Data: ProcessIdentity.Resolved] = [:]
+    private let idLock = NSLock()
+
+    /// Attribute a flow to an app using the SAME resolver the UI/toggles use
+    /// (`ProcessIdentity`), so a verdict and a checkbox always refer to the
+    /// same id. Falls back to code-signing resolution only if the audit
+    /// token yields no pid.
+    private func resolveApp(token: Data)
+        -> (id: String, name: String, path: String) {
+        if !token.isEmpty {
+            idLock.lock()
+            let hit = idCache[token]
+            idLock.unlock()
+            if let hit { return (hit.id, hit.name, hit.path) }
+        }
+        if let pid = Self.pid(fromAuditToken: token) {
+            let r = ProcessIdentity.resolve(pid: Int(pid))
+            if !token.isEmpty {
+                idLock.lock(); idCache[token] = r; idLock.unlock()
+            }
+            return (r.id, r.name, r.path)
+        }
+        let a = AppResolver.resolve(auditToken: token)
+        return (a.id, a.name, a.path)
+    }
+
+    /// `audit_token_t.val[5]` is the pid (mach/audit_token.h layout).
+    private static func pid(fromAuditToken data: Data) -> pid_t? {
+        guard data.count == MemoryLayout<audit_token_t>.size else {
+            return nil
+        }
+        var t = audit_token_t()
+        _ = withUnsafeMutableBytes(of: &t) { raw in
+            data.copyBytes(to: raw.bindMemory(to: UInt8.self))
+        }
+        let p = pid_t(bitPattern: t.val.5)
+        return p > 0 ? p : nil
+    }
 
     // MARK: Lifecycle
 
@@ -45,7 +88,7 @@ final class FilterDataProvider: NEFilterDataProvider, @unchecked Sendable {
         -> NEFilterNewFlowVerdict {
 
         let token = flow.sourceAppAuditToken ?? Data()
-        let app = AppResolver.resolve(auditToken: token)
+        let app = resolveApp(token: token)
 
         let doc = store.loadCached()
 

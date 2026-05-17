@@ -48,7 +48,7 @@ final class AppState {
         // de-dupe, so changing the resolver never leaves stale rows behind.
         var migrated: [String: AppEntry] = [:]
         for (_, e) in doc.apps {
-            let cid = NettopReader.canonicalID(e.id)
+            let cid = ProcessIdentity.canonicalID(e.id)
             if migrated[cid] == nil {
                 migrated[cid] = AppEntry(id: cid, name: e.name,
                                          path: e.path, allowed: e.allowed)
