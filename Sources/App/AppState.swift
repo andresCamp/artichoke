@@ -44,14 +44,26 @@ final class AppState {
         enabled = doc.enabled
         allowUnknownByDefault = doc.allowUnknownByDefault
         capMB = Int((doc.capBytes ?? 0) / 1_000_000)
-        // Migrate legacy helper-id ghosts (com.x.app.helper → com.x.app) and
-        // de-dupe, so changing the resolver never leaves stale rows behind.
+        // Fold ghosts left by resolver/path changes into one canonical
+        // entry: helper-id strip, APFS-firmlink-normalised path, drop
+        // pre-path-scheme bundle ids that can't be remapped, and OR the
+        // allowed flag so a previously-checked variant isn't lost.
         var migrated: [String: AppEntry] = [:]
         for (_, e) in doc.apps {
-            let cid = ProcessIdentity.canonicalID(e.id)
-            if migrated[cid] == nil {
+            var cid = ProcessIdentity.canonicalID(e.id)
+            if cid.hasPrefix("/") { cid = ProcessIdentity.canonicalPath(cid) }
+            guard cid.hasPrefix("/") || cid.hasPrefix("proc:") else {
+                continue   // legacy bundle-id ghost — no pid to remap it
+            }
+            let path = ProcessIdentity.canonicalPath(e.path)
+            if var existing = migrated[cid] {
+                existing.allowed = existing.allowed || e.allowed
+                if existing.name.isEmpty { existing.name = e.name }
+                if existing.path.isEmpty { existing.path = path }
+                migrated[cid] = existing
+            } else {
                 migrated[cid] = AppEntry(id: cid, name: e.name,
-                                         path: e.path, allowed: e.allowed)
+                                         path: path, allowed: e.allowed)
             }
         }
         apps = migrated

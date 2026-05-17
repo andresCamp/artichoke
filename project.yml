@@ -24,6 +24,15 @@ settings:
     CURRENT_PROJECT_VERSION: "2"
     INFOPLIST_KEY_NSHumanReadableCopyright: "© 2026 Andrés Campos. Source-available, PolyForm Noncommercial 1.0.0."
 
+schemes:
+  ArtichokeTests:
+    build:
+      targets:
+        ArtichokeTests: [test]
+    test:
+      targets:
+        - ArtichokeTests
+
 targets:
   Artichoke:
     type: application
@@ -42,6 +51,20 @@ targets:
     dependencies:
       - target: ArtichokeFilter
         embed: true                 # system extension embedded in Contents/Library/SystemExtensions
+
+  ArtichokeTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - Tests
+      # Compile the unit under test directly into the bundle — no host app,
+      # so the pure identity logic runs as a fast logic-only test.
+      - path: Sources/Shared/ProcessIdentity.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.serdna.artichoke.tests
+        CODE_SIGNING_ALLOWED: "NO"
+        GENERATE_INFOPLIST_FILE: "YES"
 
   ArtichokeFilter:
     type: system-extension         # NEFilterDataProvider, activated via

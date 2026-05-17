@@ -32,6 +32,11 @@ enum ProcessIdentity {
     /// e.g. the extension's audit-token fallback). Same id scheme as
     /// `resolve(pid:)` so both code paths agree.
     static func resolve(execPath: String) -> Resolved {
+        // An empty/relative path is not resolvable. (`URL(fileURLWithPath:)`
+        // would otherwise anchor it to the CWD and yield a junk basename.)
+        guard execPath.hasPrefix("/") else {
+            return Resolved(id: "proc:unknown", name: "unknown", path: "")
+        }
         if let appURL = enclosingAppBundle(execPath) {
             return identity(forAppBundle: appURL)
         }
@@ -51,7 +56,22 @@ enum ProcessIdentity {
                         "CFBundleDisplayName") as? String)
             ?? (b?.object(forInfoDictionaryKey: "CFBundleName") as? String)
             ?? url.deletingPathExtension().lastPathComponent
-        return Resolved(id: url.path, name: name, path: url.path)
+        let p = canonicalPath(url.path)
+        return Resolved(id: p, name: name, path: p)
+    }
+
+    /// Collapse the APFS firmlink so the id is identical no matter which
+    /// process observes it: the unsandboxed app gets `/Applications/X.app`
+    /// but the sandboxed extension's `proc_pidpath` can return
+    /// `/System/Volumes/Data/Applications/X.app` for the very same bundle.
+    /// Pure string transform — deterministic and sandbox-safe (no fs calls,
+    /// which could themselves differ across the sandbox boundary).
+    static func canonicalPath(_ path: String) -> String {
+        let firmlink = "/System/Volumes/Data"
+        if path.hasPrefix(firmlink + "/") {
+            return String(path.dropFirst(firmlink.count))
+        }
+        return path
     }
 
     /// Per-process label for an app's expanded breakdown — `comm`
