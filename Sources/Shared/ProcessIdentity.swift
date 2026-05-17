@@ -97,6 +97,14 @@ enum ProcessIdentity {
         return id
     }
 
+    /// Diagnostics only: the raw `proc_pidpath` result *as this process
+    /// sees it*. Lets the extension log what it actually observes inside its
+    /// sandbox vs. what the app sees — the only way to catch a runtime
+    /// app/extension divergence (string unit tests can't).
+    static func debugRawPath(pid: Int) -> String {
+        executablePath(pid) ?? "<nil>"
+    }
+
     // MARK: - Process introspection
 
     /// First `.app` bundle found walking the process then its ancestors

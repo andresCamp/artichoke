@@ -57,9 +57,10 @@ targets:
     platform: macOS
     sources:
       - Tests
-      # Compile the unit under test directly into the bundle — no host app,
-      # so the pure identity logic runs as a fast logic-only test.
+      # Compile the units under test directly into the bundle — no host app,
+      # so the identity + verdict logic runs as a fast logic-only test.
       - path: Sources/Shared/ProcessIdentity.swift
+      - path: Sources/Shared/Models.swift
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: dev.serdna.artichoke.tests

@@ -99,12 +99,29 @@ final class FilterDataProvider: NEFilterDataProvider, @unchecked Sendable {
 
         let doc = store.loadCached()
 
+        // Full diagnostic of one verdict: the only way to actually catch an
+        // app/extension divergence is to see, from inside the extension's
+        // sandbox, the raw pid/path it observes, the id it computed, and
+        // whether that id is even in the ruleset the checkboxes wrote.
+        let pid = Self.pid(fromAuditToken: token)
+        let raw = pid.map { ProcessIdentity.debugRawPath(pid: Int($0)) }
+            ?? "<no-pid>"
+        let known = doc.apps[app.id] != nil
+        let allowed = doc.isAllowed(app.id)
+        log.info("""
+            FLOW pid=\(pid ?? -1) tok=\(token.count)B \
+            rawExe=\(raw, privacy: .public) \
+            -> id=\(app.id, privacy: .public) \
+            enabled=\(doc.enabled) inRuleset=\(known) \
+            allowed=\(allowed) ruleKeys=[\(doc.apps.keys.sorted().joined(separator: " | "), privacy: .public)]
+            """)
+
         // Surface unseen apps to the UI so the user can choose them.
         if doc.apps[app.id] == nil && app.id != "unknown" {
             ipc.reportDiscoveredApp(id: app.id, name: app.name, path: app.path)
         }
 
-        guard doc.isAllowed(app.id) else {
+        guard allowed else {
             log.info("DROP \(app.name, privacy: .public) [\(app.id, privacy: .public)]")
             return .drop()
         }

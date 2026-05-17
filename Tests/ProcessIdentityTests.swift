@@ -88,4 +88,46 @@ final class ProcessIdentityTests: XCTestCase {
         let r = ProcessIdentity.resolve(execPath: "")
         XCTAssertEqual(r.id, "proc:unknown")
     }
+
+    // MARK: The allow bug, end to end
+
+    /// This is the regression for "Dia is checked but won't load": the app
+    /// writes the rule under the id it resolves; the extension may observe
+    /// the firmlink form. The verdict must still be ALLOW. Before
+    /// canonicalPath the two ids differed → isAllowed false → the bug.
+    func testAllowDecisionSurvivesFirmlinkDivergence() {
+        var doc = FilterDocument()
+        doc.enabled = true
+
+        // App side (unsandboxed) writes the rule.
+        let appID = ProcessIdentity.resolve(
+            execPath: "/Applications/Dia.app/Contents/MacOS/Dia").id
+        doc.apps[appID] = AppEntry(id: appID, name: "Dia",
+                                   path: appID, allowed: true)
+
+        // Extension side (sandboxed) may see the data-volume path.
+        let extID = ProcessIdentity.resolve(
+            execPath:
+              "/System/Volumes/Data/Applications/Dia.app/Contents/MacOS/Dia")
+            .id
+
+        XCTAssertEqual(extID, appID, "ids must converge across the sandbox")
+        XCTAssertTrue(doc.isAllowed(extID),
+            "a checked app must stay allowed even when the extension "
+            + "observes the firmlink path")
+    }
+
+    func testUncheckedAppIsBlockedWhenChoking() {
+        var doc = FilterDocument()
+        doc.enabled = true
+        doc.allowUnknownByDefault = false
+        XCTAssertFalse(doc.isAllowed("/Applications/Unchecked.app"))
+    }
+
+    func testEverythingAllowedWhenNotChoking() {
+        var doc = FilterDocument()
+        doc.enabled = false
+        XCTAssertTrue(doc.isAllowed("/Applications/Anything.app"),
+            "switch off must never block")
+    }
 }
