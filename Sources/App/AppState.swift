@@ -58,6 +58,12 @@ final class AppState {
         }
         HotspotMonitor.shared.start()
 
+        // Per-app traffic via `nettop` — works immediately, no approval, and
+        // independent of the content filter. The filter is consulted only to
+        // block/cap; this is what populates the list.
+        NettopReader.shared.state = self
+        NettopReader.shared.start()
+
         // Sample live rate once a second.
         rateTimer = Timer.scheduledTimer(withTimeInterval: 1,
                                          repeats: true) { [weak self] _ in
@@ -85,6 +91,24 @@ final class AppState {
         apps[id] = AppEntry(id: id, name: name, path: path,
                             allowed: allowUnknownByDefault)
         persist()
+    }
+
+    /// Like `addDiscoveredApp`, but also backfills a better name/path if a
+    /// later sighting has them (the `nettop` monitor learns identities
+    /// progressively). Safe to call every sample.
+    func ensureApp(id: String, name: String, path: String) {
+        if var e = apps[id] {
+            var changed = false
+            if e.path.isEmpty, !path.isEmpty { e.path = path; changed = true }
+            if (e.name.isEmpty || e.name == e.id), name != id, !name.isEmpty {
+                e.name = name; changed = true
+            }
+            if changed { apps[id] = e; persist() }
+        } else {
+            apps[id] = AppEntry(id: id, name: name, path: path,
+                                allowed: allowUnknownByDefault)
+            persist()
+        }
     }
 
     func applyUsageDeltas(_ deltas: [String: [UInt64]]) {

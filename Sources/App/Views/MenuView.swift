@@ -1,13 +1,23 @@
 import SwiftUI
+import AppKit
 
 struct MenuView: View {
     @Bindable var state: AppState
-    @State private var showSettings = false
+    // SettingsLink doesn't reliably surface the window from a MenuBarExtra
+    // in an LSUIElement app; the programmatic action + explicit app
+    // activation does (accessory apps aren't activated automatically).
+    @Environment(\.openSettings) private var openSettings
 
+    /// Only real applications are listed — `nettop` sees every daemon on the
+    /// box, but a per-app data-saver is about apps. System/CLI processes are
+    /// still counted in the header total (honest), just not shown as rows.
     private var rows: [AppEntry] {
-        state.apps.values.sorted {
-            (state.usage[$0.id]?.total ?? 0) > (state.usage[$1.id]?.total ?? 0)
-        }
+        state.apps.values
+            .filter { URL(fileURLWithPath: $0.path).pathExtension == "app" }
+            .sorted {
+                (state.usage[$0.id]?.total ?? 0)
+                    > (state.usage[$1.id]?.total ?? 0)
+            }
     }
 
     var body: some View {
@@ -35,7 +45,6 @@ struct MenuView: View {
                 }
                 .frame(height: 320)
             }
-            if showSettings { Divider(); settings }
         }
         .frame(width: 360)
     }
@@ -56,7 +65,10 @@ struct MenuView: View {
 
                 Spacer()
 
-                Button { showSettings.toggle() } label: {
+                Button {
+                    openSettings()
+                    NSApp.activate(ignoringOtherApps: true)
+                } label: {
                     Image(systemName: "gearshape")
                         .font(.title3)
                         .foregroundStyle(.secondary)
@@ -83,38 +95,5 @@ struct MenuView: View {
             .frame(maxWidth: .infinity)
         }
         .padding(12)
-    }
-
-    private var settings: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Toggle("Block new apps by default",
-                   isOn: Binding(get: { !state.allowUnknownByDefault },
-                                 set: { state.allowUnknownByDefault = !$0 }))
-            Toggle("Auto-on when on a hotspot",
-                   isOn: $state.autoOnHotspot)
-            HStack {
-                Text("Data cap")
-                Spacer()
-                TextField("0", value: $state.capMB, format: .number)
-                    .frame(width: 60).multilineTextAlignment(.trailing)
-                    .textFieldStyle(.roundedBorder)
-                Text("MB · 0 = off").foregroundStyle(.secondary)
-            }
-            HStack {
-                Circle()
-                    .fill(state.onHotspot ? .orange : .secondary)
-                    .frame(width: 7, height: 7)
-                Text(state.onHotspot ? "On hotspot" : "Normal network")
-                    .font(.caption).foregroundStyle(.secondary)
-                Spacer()
-                Text(state.extensionStatus)
-                    .font(.caption).foregroundStyle(.secondary)
-            }
-            Button("Quit Artichoke") { NSApp.terminate(nil) }
-                .buttonStyle(.plain).foregroundStyle(.red)
-        }
-        .padding(12)
-        .font(.callout)
-        .toggleStyle(.checkbox)
     }
 }

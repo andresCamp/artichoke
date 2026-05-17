@@ -21,6 +21,10 @@ struct ArtichokeApp: App {
             MenuView(state: state)
         }
         .menuBarExtraStyle(.window)
+
+        Settings {
+            SettingsView(state: state)
+        }
     }
 }
 
