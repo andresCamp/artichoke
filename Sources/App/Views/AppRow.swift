@@ -5,7 +5,17 @@ struct AppRow: View {
     let app: AppEntry
     let usage: UsageCounter?
     let rate: (inBps: UInt64, outBps: UInt64)?
+    /// Today's grand total — the per-app bar is a share of this.
+    let total: UInt64
+    /// Filtering is on; only then do blocked apps de-emphasize.
+    let choked: Bool
     let onToggle: (Bool) -> Void
+
+    // The live-rate label lingers briefly after traffic stops so a quick
+    // burst doesn't just flicker. Parent re-renders ~1/s, which lets the
+    // timed clear fire on schedule.
+    @State private var shownBps: UInt64 = 0
+    @State private var clearTask: Task<Void, Never>?
 
     private var icon: NSImage {
         guard !app.path.isEmpty else {
@@ -35,26 +45,17 @@ struct AppRow: View {
             VStack(alignment: .leading, spacing: 3) {
                 HStack {
                     Text(app.name).lineLimit(1)
-                        .foregroundStyle(app.allowed ? .primary : .secondary)
-                    if !app.allowed {
-                        Text("Blocked")
-                            .font(.caption2.weight(.medium))
-                            .foregroundStyle(.secondary)
-                            .padding(.horizontal, 5)
-                            .padding(.vertical, 1)
-                            .background(.secondary.opacity(0.15),
-                                        in: Capsule())
-                            .accessibilityHidden(true)
-                    }
+                        .foregroundStyle(dim ? .secondary : .primary)
                     Spacer()
-                    if let bps = rate?.inBps, bps > 0 {
-                        Label("\(AppState.fmt(bps))/s",
+                    if shownBps > 0 {
+                        Label("\(AppState.fmt(shownBps))/s",
                               systemImage: "arrow.down")
                             .labelStyle(.titleAndIcon)
                             .font(.caption2.monospacedDigit())
                             .foregroundStyle(.blue)
+                            .transition(.opacity)
                             .accessibilityLabel(
-                                "\(AppState.fmt(bps)) per second")
+                                "\(AppState.fmt(shownBps)) per second")
                     }
                     Text(AppState.fmt(usage?.total ?? 0))
                         .font(.caption.monospacedDigit())
@@ -67,13 +68,29 @@ struct AppRow: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 4)
-        // De-emphasis only; "Blocked" badge is the primary, non-color signal.
-        .opacity(app.allowed ? 1 : 0.7)
+        // Blocked apps only recede once filtering is actually on.
+        .opacity(dim ? 0.7 : 1)
+        .animation(.easeOut(duration: 0.6), value: shownBps)
+        .onChange(of: rate?.inBps ?? 0, initial: true) { _, bps in
+            if bps > 0 {
+                clearTask?.cancel()
+                shownBps = bps
+            } else if shownBps > 0, clearTask == nil {
+                clearTask = Task {
+                    try? await Task.sleep(for: .seconds(2.5))
+                    if !Task.isCancelled { shownBps = 0 }
+                    clearTask = nil
+                }
+            }
+        }
     }
 
-    /// Bar is relative to a soft 50 MB ceiling so small apps stay visible.
+    /// Blocked + filtering on.
+    private var dim: Bool { choked && !app.allowed }
+
+    /// Each app's bar is its share of today's grand total.
     private var barFraction: Double {
-        let t = Double(usage?.total ?? 0)
-        return min(1, t / (50 * 1_000_000))
+        guard total > 0 else { return 0 }
+        return min(1, Double(usage?.total ?? 0) / Double(total))
     }
 }

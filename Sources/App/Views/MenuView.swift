@@ -36,7 +36,9 @@ struct MenuView: View {
                         ForEach(rows) { app in
                             AppRow(app: app,
                                    usage: state.usage[app.id],
-                                   rate: state.liveRate[app.id]) { allowed in
+                                   rate: state.liveRate[app.id],
+                                   total: state.totalBytes,
+                                   choked: state.enabled) { allowed in
                                 state.setAllowed(app.id, allowed)
                             }
                         }
@@ -49,36 +51,20 @@ struct MenuView: View {
         .frame(width: 360)
     }
 
+    // The on/off switch leads (the product's primary action), the headline
+    // metric — total used today — sits on the same row so the effect of the
+    // switch reads at a glance, and Settings closes it out.
     private var header: some View {
-        VStack(spacing: 12) {
-            // The on/off switch is the product's primary action, so it
-            // leads the header at a large control size — unlabeled, since
-            // a switch already reads as on/off and the usage number below
-            // makes the effect obvious.
-            HStack {
-                Toggle("", isOn: Binding(get: { state.enabled },
-                                         set: { state.setEnabled($0) }))
-                    .toggleStyle(.switch)
-                    .labelsHidden()
-                    .controlSize(.large)
-                    .accessibilityLabel("Data filtering")
+        HStack(spacing: 12) {
+            Toggle("", isOn: Binding(get: { state.enabled },
+                                     set: { state.setEnabled($0) }))
+                .toggleStyle(.switch)
+                .labelsHidden()
+                .controlSize(.large)
+                .accessibilityLabel("Data filtering")
 
-                Spacer()
+            Spacer()
 
-                Button {
-                    openSettings()
-                    NSApp.activate(ignoringOtherApps: true)
-                } label: {
-                    Image(systemName: "gearshape")
-                        .font(.title3)
-                        .foregroundStyle(.secondary)
-                }
-                .buttonStyle(.plain)
-                .contentShape(Rectangle())
-                .accessibilityLabel("Settings")
-            }
-
-            // The headline metric for a cap-driven app: total used today.
             HStack(spacing: 6) {
                 if state.capReached {
                     Image(systemName: "exclamationmark.triangle.fill")
@@ -86,13 +72,26 @@ struct MenuView: View {
                         .accessibilityLabel("Data cap reached")
                 }
                 Text(AppState.fmt(state.totalBytes))
-                    .font(.system(.largeTitle, design: .rounded)
+                    .font(.system(.title2, design: .rounded)
                             .weight(.semibold))
                     .monospacedDigit()
                     .foregroundStyle(state.capReached ? .red : .primary)
                     .contentTransition(.numericText())
             }
-            .frame(maxWidth: .infinity)
+
+            Spacer()
+
+            Button {
+                openSettings()
+                NSApp.activate(ignoringOtherApps: true)
+            } label: {
+                Image(systemName: "gearshape")
+                    .font(.title3)
+                    .foregroundStyle(.secondary)
+            }
+            .buttonStyle(.plain)
+            .contentShape(Rectangle())
+            .accessibilityLabel("Settings")
         }
         .padding(12)
     }
