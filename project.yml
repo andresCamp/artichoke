@@ -1,7 +1,7 @@
-name: HotspotGuard
+name: Artichoke
 
 options:
-  bundleIdPrefix: dev.serdna.hotspotguard
+  bundleIdPrefix: dev.serdna.artichoke
   deploymentTarget:
     macOS: "14.0"
   createIntermediateGroups: true
@@ -25,7 +25,7 @@ settings:
     INFOPLIST_KEY_NSHumanReadableCopyright: "Open source — MIT"
 
 targets:
-  HotspotGuard:
+  Artichoke:
     type: application
     platform: macOS
     sources:
@@ -33,15 +33,15 @@ targets:
       - Sources/Shared
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: dev.serdna.hotspotguard
+        PRODUCT_BUNDLE_IDENTIFIER: dev.serdna.artichoke
         INFOPLIST_FILE: Config/App-Info.plist
         CODE_SIGN_ENTITLEMENTS: Config/App.entitlements
         ENABLE_APP_SANDBOX: false   # Developer ID firewall app runs unsandboxed
     dependencies:
-      - target: HotspotGuardFilter
+      - target: ArtichokeFilter
         embed: true                 # system extension embedded in Contents/Library/SystemExtensions
 
-  HotspotGuardFilter:
+  ArtichokeFilter:
     type: app-extension            # NetworkExtension system extension
     platform: macOS
     sources:
@@ -49,7 +49,7 @@ targets:
       - Sources/Shared
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: dev.serdna.hotspotguard.filter
+        PRODUCT_BUNDLE_IDENTIFIER: dev.serdna.artichoke.filter
         INFOPLIST_FILE: Config/Extension-Info.plist
         CODE_SIGN_ENTITLEMENTS: Config/Extension.entitlements
-        PRODUCT_NAME: HotspotGuardFilter
+        PRODUCT_NAME: ArtichokeFilter

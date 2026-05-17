@@ -8,9 +8,9 @@ final class ExtensionManager: NSObject, OSSystemExtensionRequestDelegate,
                               @unchecked Sendable {
     static let shared = ExtensionManager()
 
-    private let log = Logger(subsystem: "dev.serdna.hotspotguard",
+    private let log = Logger(subsystem: "dev.serdna.artichoke",
                              category: "sysext")
-    let extensionBundleID = "dev.serdna.hotspotguard.filter"
+    let extensionBundleID = "dev.serdna.artichoke.filter"
     var onStateChange: ((String) -> Void)?
 
     func activate() {

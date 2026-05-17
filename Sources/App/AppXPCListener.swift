@@ -6,7 +6,7 @@ import os
 final class AppXPCListener: NSObject, NSXPCListenerDelegate, AppXPC,
                             @unchecked Sendable {
     static let shared = AppXPCListener()
-    private let log = Logger(subsystem: "dev.serdna.hotspotguard",
+    private let log = Logger(subsystem: "dev.serdna.artichoke",
                              category: "xpc")
     private var listener: NSXPCListener?
 

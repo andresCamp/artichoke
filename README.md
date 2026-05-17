@@ -1,4 +1,4 @@
-# HotspotGuard
+# Artichoke
 
 An open-source, per-app data firewall for macOS — a focused clone of TripMode's
 three features that matter on a metered hotspot:
@@ -17,13 +17,13 @@ MIT licensed.
 ## How it works
 
 macOS has no way to block traffic per-app from a normal process — the only
-supported mechanism is a **Network System Extension**. HotspotGuard is a
+supported mechanism is a **Network System Extension**. Artichoke is a
 SwiftUI menu-bar app that embeds an `NEFilterDataProvider` content-filter
 system extension.
 
 ```
 ┌────────────────────────┐         ┌──────────────────────────────┐
-│ HotspotGuard.app        │  XPC    │ HotspotGuardFilter.appex      │
+│ Artichoke.app        │  XPC    │ ArtichokeFilter.appex      │
 │ (menu bar, SwiftUI)     │◀───────▶│ (NEFilterDataProvider)        │
 │  • ruleset + UI         │telemetry│  • handleNewFlow → allow/drop │
 │  • data-cap enforcement │         │  • byte metering              │
@@ -62,20 +62,20 @@ report newly-seen apps and coalesced byte deltas back to the app.
 
 2. **Generate the Xcode project:**
    ```sh
-   cd hotspotguard
+   cd artichoke
    xcodegen generate
    ```
 
-3. **Build & run.** Either open `HotspotGuard.xcodeproj` in Xcode and run, or:
+3. **Build & run.** Either open `Artichoke.xcodeproj` in Xcode and run, or:
    ```sh
    DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer \
-     xcodebuild -project HotspotGuard.xcodeproj \
-     -scheme HotspotGuard -configuration Release build
+     xcodebuild -project Artichoke.xcodeproj \
+     -scheme Artichoke -configuration Release build
    ```
 
 4. **Install to /Applications.** With SIP enabled, a Developer-ID system
    extension only loads from an app inside `/Applications`. Copy the built
-   `HotspotGuard.app` there and launch it from there.
+   `Artichoke.app` there and launch it from there.
 
 5. **Approve the extension.** First launch triggers a system prompt — approve
    it in **System Settings ▸ Privacy & Security**. Then toggle the switch in
@@ -88,15 +88,15 @@ Because of the `/Applications` requirement, iterate with:
 ```sh
 xcodegen generate
 DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild \
-  -project HotspotGuard.xcodeproj -scheme HotspotGuard -configuration Release \
+  -project Artichoke.xcodeproj -scheme Artichoke -configuration Release \
   -derivedDataPath build build
-rm -rf /Applications/HotspotGuard.app
-cp -R build/Build/Products/Release/HotspotGuard.app /Applications/
-open /Applications/HotspotGuard.app
+rm -rf /Applications/Artichoke.app
+cp -R build/Build/Products/Release/Artichoke.app /Applications/
+open /Applications/Artichoke.app
 ```
 
 Inspect the extension's logs:
-`log stream --predicate 'subsystem == "dev.serdna.hotspotguard"' --level debug`
+`log stream --predicate 'subsystem == "dev.serdna.artichoke"' --level debug`
 
 ## Known limitations / next steps
 

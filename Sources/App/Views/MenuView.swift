@@ -103,7 +103,7 @@ struct MenuView: View {
                 Text(state.extensionStatus)
                     .font(.caption).foregroundStyle(.secondary)
             }
-            Button("Quit HotspotGuard") { NSApp.terminate(nil) }
+            Button("Quit Artichoke") { NSApp.terminate(nil) }
                 .buttonStyle(.plain).foregroundStyle(.red)
         }
         .padding(12)

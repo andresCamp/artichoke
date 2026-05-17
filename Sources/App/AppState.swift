@@ -120,7 +120,7 @@ final class AppState {
         if expensive && !enabled {
             setEnabled(true)
             notify(title: "Hotspot detected",
-                   body: "HotspotGuard turned on to conserve data.")
+                   body: "Artichoke turned on to conserve data.")
         }
     }
 

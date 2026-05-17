@@ -9,7 +9,7 @@ final class HotspotMonitor: @unchecked Sendable {
     static let shared = HotspotMonitor()
 
     private let monitor = NWPathMonitor()
-    private let queue = DispatchQueue(label: "dev.serdna.hotspotguard.path")
+    private let queue = DispatchQueue(label: "dev.serdna.artichoke.path")
     private(set) var onExpensiveLink = false
 
     /// Called whenever expensive-link status changes (true = on hotspot).

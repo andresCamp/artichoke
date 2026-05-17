@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct HotspotGuardApp: App {
+struct ArtichokeApp: App {
     @State private var state = AppState()
 
     var body: some Scene {

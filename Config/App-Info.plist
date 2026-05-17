@@ -3,9 +3,9 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleName</key>
-	<string>HotspotGuard</string>
+	<string>Artichoke</string>
 	<key>CFBundleDisplayName</key>
-	<string>HotspotGuard</string>
+	<string>Artichoke</string>
 	<key>CFBundleIdentifier</key>
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	<key>CFBundleShortVersionString</key>

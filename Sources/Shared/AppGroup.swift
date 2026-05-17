@@ -18,7 +18,7 @@ enum AppGroup {
         else {
             // Last-resort fallback for unsigned/dev runs; real builds always
             // resolve the entitlement above.
-            return "group.dev.serdna.hotspotguard"
+            return "group.dev.serdna.artichoke"
         }
         return first
     }()

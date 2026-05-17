@@ -7,7 +7,7 @@ import os
 /// stops traffic filtering system-wide.
 final class FilterController: @unchecked Sendable {
     static let shared = FilterController()
-    private let log = Logger(subsystem: "dev.serdna.hotspotguard",
+    private let log = Logger(subsystem: "dev.serdna.artichoke",
                              category: "filter-mgr")
 
     func enable(_ on: Bool) async {
@@ -19,7 +19,7 @@ final class FilterController: @unchecked Sendable {
                 cfg.filterPackets = false
                 cfg.filterSockets = true
                 mgr.providerConfiguration = cfg
-                mgr.localizedDescription = "HotspotGuard"
+                mgr.localizedDescription = "Artichoke"
             }
             mgr.isEnabled = on
             try await mgr.saveToPreferences()

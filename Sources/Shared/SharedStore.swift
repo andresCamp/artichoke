@@ -8,7 +8,7 @@ final class SharedStore: @unchecked Sendable {
     static let shared = SharedStore()
 
     private let fileURL: URL
-    private let queue = DispatchQueue(label: "dev.serdna.hotspotguard.store")
+    private let queue = DispatchQueue(label: "dev.serdna.artichoke.store")
     private var cached: FilterDocument?
     private var cachedAt: Date = .distantPast
     private let ttl: TimeInterval = 0.5

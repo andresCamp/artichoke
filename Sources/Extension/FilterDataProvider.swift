@@ -8,7 +8,7 @@ import os
 /// `flowApp` is guarded by `flowLock`; the provider is otherwise stateless.
 final class FilterDataProvider: NEFilterDataProvider, @unchecked Sendable {
 
-    private let log = Logger(subsystem: "dev.serdna.hotspotguard",
+    private let log = Logger(subsystem: "dev.serdna.artichoke",
                              category: "filter")
     private let store = SharedStore.shared
     private let ipc = ExtensionIPCClient.shared

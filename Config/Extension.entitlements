@@ -8,7 +8,7 @@
 	</array>
 	<key>com.apple.security.application-groups</key>
 	<array>
-		<string>$(TeamIdentifierPrefix)dev.serdna.hotspotguard</string>
+		<string>$(TeamIdentifierPrefix)dev.serdna.artichoke</string>
 	</array>
 </dict>
 </plist>

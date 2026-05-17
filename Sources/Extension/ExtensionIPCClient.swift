@@ -8,7 +8,7 @@ final class ExtensionIPCClient: @unchecked Sendable {
     static let shared = ExtensionIPCClient()
 
     private var connection: NSXPCConnection?
-    private let queue = DispatchQueue(label: "dev.serdna.hotspotguard.ipc")
+    private let queue = DispatchQueue(label: "dev.serdna.artichoke.ipc")
     private var pending: [String: (UInt64, UInt64)] = [:]   // id → (in,out)
     private var flushScheduled = false
 
