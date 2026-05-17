@@ -3,7 +3,6 @@ import AppKit
 
 struct AppRow: View {
     let app: AppEntry
-    let mode: ViewMode
     let usage: UsageCounter?
     let rate: (inBps: UInt64, outBps: UInt64)?
     let onToggle: (Bool) -> Void
@@ -48,15 +47,18 @@ struct AppRow: View {
                             .accessibilityHidden(true)
                     }
                     Spacer()
-                    if mode == .live {
-                        Text("↓ \(AppState.fmt(rate?.inBps ?? 0))/s")
+                    if let bps = rate?.inBps, bps > 0 {
+                        Label("\(AppState.fmt(bps))/s",
+                              systemImage: "arrow.down")
+                            .labelStyle(.titleAndIcon)
                             .font(.caption2.monospacedDigit())
-                            .foregroundStyle(.secondary)
-                    } else {
-                        Text(AppState.fmt(usage?.total ?? 0))
-                            .font(.caption.monospacedDigit())
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(.blue)
+                            .accessibilityLabel(
+                                "\(AppState.fmt(bps)) per second")
                     }
+                    Text(AppState.fmt(usage?.total ?? 0))
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(.secondary)
                 }
                 ProgressView(value: barFraction)
                     .progressViewStyle(.linear)

@@ -1,11 +1,7 @@
 import SwiftUI
 
-enum ViewMode: String, CaseIterable { case today = "Today"
-                                       case live  = "Live monitor" }
-
 struct MenuView: View {
     @Bindable var state: AppState
-    @State private var mode: ViewMode = .today
     @State private var showSettings = false
 
     private var rows: [AppEntry] {
@@ -17,7 +13,6 @@ struct MenuView: View {
     var body: some View {
         VStack(spacing: 0) {
             header
-            Divider()
             if rows.isEmpty {
                 ContentUnavailableView("No traffic yet",
                     systemImage: "antenna.radiowaves.left.and.right",
@@ -29,7 +24,7 @@ struct MenuView: View {
                 ScrollView {
                     LazyVStack(spacing: 2) {
                         ForEach(rows) { app in
-                            AppRow(app: app, mode: mode,
+                            AppRow(app: app,
                                    usage: state.usage[app.id],
                                    rate: state.liveRate[app.id]) { allowed in
                                 state.setAllowed(app.id, allowed)
@@ -46,46 +41,46 @@ struct MenuView: View {
     }
 
     private var header: some View {
-        HStack(alignment: .center) {
-            Toggle("", isOn: Binding(get: { state.enabled },
-                                     set: { state.setEnabled($0) }))
-                .toggleStyle(.switch)
-                .labelsHidden()
-                .accessibilityLabel("Data filtering")
+        VStack(spacing: 12) {
+            // The on/off switch is the product's primary action, so it
+            // leads the header at a large control size — unlabeled, since
+            // a switch already reads as on/off and the usage number below
+            // makes the effect obvious.
+            HStack {
+                Toggle("", isOn: Binding(get: { state.enabled },
+                                         set: { state.setEnabled($0) }))
+                    .toggleStyle(.switch)
+                    .labelsHidden()
+                    .controlSize(.large)
+                    .accessibilityLabel("Data filtering")
 
-            Spacer()
+                Spacer()
 
-            VStack(spacing: 2) {
-                HStack(spacing: 4) {
-                    if state.capReached {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .foregroundStyle(.red)
-                            .help("Data cap reached — all traffic blocked")
-                            .accessibilityLabel("Data cap reached")
-                    }
-                    Text(AppState.fmt(state.totalBytes))
-                        .font(.title2.weight(.semibold))
-                        .foregroundStyle(state.capReached ? .red : .primary)
+                Button { showSettings.toggle() } label: {
+                    Image(systemName: "gearshape")
+                        .font(.title3)
+                        .foregroundStyle(.secondary)
                 }
-                Picker("", selection: $mode) {
-                    ForEach(ViewMode.allCases, id: \.self) {
-                        Text($0.rawValue).tag($0)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .fixedSize()
-                .accessibilityLabel("View mode")
+                .buttonStyle(.plain)
+                .contentShape(Rectangle())
+                .accessibilityLabel("Settings")
             }
 
-            Spacer()
-
-            Button { showSettings.toggle() } label: {
-                Image(systemName: "ellipsis.circle")
+            // The headline metric for a cap-driven app: total used today.
+            HStack(spacing: 6) {
+                if state.capReached {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.red)
+                        .accessibilityLabel("Data cap reached")
+                }
+                Text(AppState.fmt(state.totalBytes))
+                    .font(.system(.largeTitle, design: .rounded)
+                            .weight(.semibold))
+                    .monospacedDigit()
+                    .foregroundStyle(state.capReached ? .red : .primary)
+                    .contentTransition(.numericText())
             }
-            .buttonStyle(.plain)
-            .contentShape(Rectangle())
-            .accessibilityLabel("Settings")
+            .frame(maxWidth: .infinity)
         }
         .padding(12)
     }
