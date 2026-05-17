@@ -21,8 +21,8 @@ settings:
     ENABLE_HARDENED_RUNTIME: true
     SWIFT_VERSION: "6.0"
     MARKETING_VERSION: "0.1.0"
-    CURRENT_PROJECT_VERSION: "1"
-    INFOPLIST_KEY_NSHumanReadableCopyright: "Open source — MIT"
+    CURRENT_PROJECT_VERSION: "2"
+    INFOPLIST_KEY_NSHumanReadableCopyright: "© 2026 Andrés Campos. Source-available, PolyForm Noncommercial 1.0.0."
 
 targets:
   Artichoke:
