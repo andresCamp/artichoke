@@ -22,6 +22,9 @@ final class AppState {
     // Usage, keyed by signing id.
     private(set) var apps: [String: AppEntry] = [:]
     private(set) var usage: [String: UsageCounter] = [:]
+    /// app id → (process label → bytes). The list shows one row per app;
+    /// expanding it reveals this per-process line-by-line breakdown.
+    private(set) var breakdown: [String: [String: UInt64]] = [:]
     private(set) var liveRate: [String: (inBps: UInt64, outBps: UInt64)] = [:]
     private(set) var capReached = false
     private(set) var onHotspot = false
@@ -41,7 +44,17 @@ final class AppState {
         enabled = doc.enabled
         allowUnknownByDefault = doc.allowUnknownByDefault
         capMB = Int((doc.capBytes ?? 0) / 1_000_000)
-        apps = doc.apps
+        // Migrate legacy helper-id ghosts (com.x.app.helper → com.x.app) and
+        // de-dupe, so changing the resolver never leaves stale rows behind.
+        var migrated: [String: AppEntry] = [:]
+        for (_, e) in doc.apps {
+            let cid = NettopReader.canonicalID(e.id)
+            if migrated[cid] == nil {
+                migrated[cid] = AppEntry(id: cid, name: e.name,
+                                         path: e.path, allowed: e.allowed)
+            }
+        }
+        apps = migrated
 
         UNUserNotificationCenter.current()
             .requestAuthorization(options: [.alert, .sound]) { _, _ in }
@@ -93,31 +106,36 @@ final class AppState {
         persist()
     }
 
-    /// Like `addDiscoveredApp`, but also backfills a better name/path if a
-    /// later sighting has them (the `nettop` monitor learns identities
-    /// progressively). Safe to call every sample.
+    /// Live monitor discovery. In-memory only — `nettop` sees hundreds of
+    /// transient processes; persisting them would bloat the extension's
+    /// ruleset doc and leave ghost rows when the resolver changes. Only an
+    /// explicit user allow/deny (`setAllowed`) is written to disk.
     func ensureApp(id: String, name: String, path: String) {
         if var e = apps[id] {
-            var changed = false
-            if e.path.isEmpty, !path.isEmpty { e.path = path; changed = true }
+            if e.path.isEmpty, !path.isEmpty { e.path = path }
             if (e.name.isEmpty || e.name == e.id), name != id, !name.isEmpty {
-                e.name = name; changed = true
+                e.name = name
             }
-            if changed { apps[id] = e; persist() }
+            apps[id] = e
         } else {
             apps[id] = AppEntry(id: id, name: name, path: path,
                                 allowed: allowUnknownByDefault)
-            persist()
         }
     }
 
-    func applyUsageDeltas(_ deltas: [String: [UInt64]]) {
+    func applyUsageDeltas(_ deltas: [String: [UInt64]],
+                          breakdown bd: [String: [String: UInt64]] = [:]) {
         rolloverIfNewDay()
         for (id, d) in deltas where d.count == 2 {
             var c = usage[id] ?? UsageCounter()
             c.inBytes &+= d[0]
             c.outBytes &+= d[1]
             usage[id] = c
+        }
+        for (id, procs) in bd {
+            for (p, b) in procs {
+                breakdown[id, default: [:]][p, default: 0] &+= b
+            }
         }
         enforceCap()
     }
@@ -173,6 +191,7 @@ final class AppState {
         if now != dayStamp {
             dayStamp = now
             usage.removeAll()
+            breakdown.removeAll()
             lastRateSample.removeAll()
             capReached = false
             SharedStore.shared.mutate { $0.capReached = false }
@@ -186,7 +205,12 @@ final class AppState {
             doc.enabled = enabled
             doc.allowUnknownByDefault = allowUnknownByDefault
             doc.capBytes = capMB > 0 ? UInt64(capMB) * 1_000_000 : nil
-            doc.apps = apps
+            // Only persist apps the user explicitly moved off the default
+            // verdict. Apps at the default behave identically whether listed
+            // or absent (the extension applies allowUnknownByDefault to
+            // anything not listed), so this keeps the rules doc tiny and
+            // immune to the nettop monitor's churn.
+            doc.apps = apps.filter { $0.value.allowed != allowUnknownByDefault }
         }
     }
 

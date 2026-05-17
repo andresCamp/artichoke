@@ -44,6 +44,7 @@ final class NettopReader {
                                  cin: UInt64, cout: UInt64)]) {
         guard let state else { return }
         var deltas: [String: [UInt64]] = [:]
+        var bd: [String: [String: UInt64]] = [:]
         for r in rows {
             let (pin, pout) = prev[r.pid] ?? (r.cin, r.cout)
             // Counters can reset (pid reuse / connection churn) — clamp.
@@ -57,8 +58,15 @@ final class NettopReader {
             var e = deltas[who.id] ?? [0, 0]
             e[0] &+= din; e[1] &+= dout
             deltas[who.id] = e
+
+            // Keep the real per-process name so the row can expand into a
+            // line-by-line breakdown of the helpers folded into this app.
+            let label = Self.procLabel(pid: r.pid, fallback: r.proc)
+            bd[who.id, default: [:]][label, default: 0] &+= (din &+ dout)
         }
-        if !deltas.isEmpty { state.applyUsageDeltas(deltas) }
+        if !deltas.isEmpty {
+            state.applyUsageDeltas(deltas, breakdown: bd)
+        }
     }
 
     // MARK: nettop
@@ -100,36 +108,97 @@ final class NettopReader {
         return res
     }
 
-    /// Resolve a pid to a stable id + display name + icon path. Helper
-    /// processes (Chrome/Figma/Electron renderers, XPC services) are rolled
-    /// up into the `.app` that contains them so the list shows one row per
-    /// real app instead of a dozen "* Helper" fragments. Daemons fall back
-    /// to a clean executable name, never `nettop`'s mangled string.
+    /// Resolve a pid to a stable id + display name + icon path. A process is
+    /// attributed to the nearest `.app` in its own path **or its ancestry**:
+    /// app helpers (Chrome/Figma renderers, XPC services) fold onto the app
+    /// that bundles them, and CLI tools fold onto the app that launched them
+    /// — `claude` run in a terminal is the terminal's traffic, not its own
+    /// row. This is the OS-given parent chain, so it never depends on a
+    /// version, path layout, or hardcoded name. Genuine system daemons (no
+    /// `.app` anywhere in the chain) are named by their `comm`.
     nonisolated private static func identify(pid: Int, fallback: String)
         -> (id: String, name: String, path: String) {
-        // 1. Foreground GUI app — cleanest identity directly.
-        if let app = NSRunningApplication(processIdentifier: pid_t(pid)),
-           let bid = app.bundleIdentifier {
-            return (bid, app.localizedName ?? bid,
-                    app.bundleURL?.path ?? "")
-        }
-        // 2. Resolve the real executable and group it under its .app bundle.
-        if let exe = executablePath(pid) {
-            if let appURL = enclosingAppBundle(exe) {
-                let b = Bundle(url: appURL)
-                let id = b?.bundleIdentifier ?? appURL.lastPathComponent
-                let name = (b?.object(forInfoDictionaryKey: "CFBundleName")
-                                as? String)
-                    ?? FileManager.default.displayName(atPath: appURL.path)
+        // 1. Walk self → parent → … for the first enclosing .app bundle.
+        if let appURL = appBundleInChain(pid) {
+            let b = Bundle(url: appURL)
+            let id = canonicalID(
+                b?.bundleIdentifier ?? appURL.lastPathComponent)
+            let name = (b?.object(forInfoDictionaryKey:
+                            "CFBundleDisplayName") as? String)
+                ?? (b?.object(forInfoDictionaryKey: "CFBundleName")
+                            as? String)
+                ?? FileManager.default.displayName(atPath: appURL.path)
                     .replacingOccurrences(of: ".app", with: "")
-                return (id, name, appURL.path)
-            }
-            // 3. Plain daemon/CLI: clean binary name from its path.
-            let n = URL(fileURLWithPath: exe).lastPathComponent
-            return ("proc:\(n)", n, exe)
+            return (id, name, appURL.path)
         }
-        // 4. Last resort: nettop's process token.
-        return ("proc:\(fallback)", fallback, "")
+        // 2. No app anywhere in the chain → a real system daemon/CLI.
+        //    Name it by `comm` (stable across versions), never the path's
+        //    last component (which can be a bare version like "2.1.143").
+        let n = procName(pid) ?? fallback
+        return ("proc:\(n)", n, executablePath(pid) ?? "")
+    }
+
+    /// First `.app` bundle found walking the process and then its ancestors
+    /// (bounded — pid 1 / cycle-safe). Returns the *outermost* `.app` at the
+    /// matching level so nested helper bundles still collapse to the product.
+    nonisolated private static func appBundleInChain(_ pid: Int) -> URL? {
+        var cur = Int32(pid)
+        for _ in 0..<24 {
+            if cur <= 1 { break }
+            if let exe = executablePath(Int(cur)),
+               let app = enclosingAppBundle(exe) {
+                return app
+            }
+            guard let p = parentPID(cur), p != cur else { break }
+            cur = p
+        }
+        return nil
+    }
+
+    /// The process's `comm` (16-char kernel name, e.g. "claude"), independent
+    /// of the executable's filename. nil if the pid is gone.
+    nonisolated private static func procName(_ pid: Int) -> String? {
+        var buf = [CChar](repeating: 0, count: 256)
+        let n = proc_name(Int32(pid), &buf, UInt32(buf.count))
+        guard n > 0 else { return nil }
+        let s = String(cString: buf)
+        return s.isEmpty ? nil : s
+    }
+
+    /// Parent pid via `sysctl(KERN_PROC_PID)`. nil if unavailable.
+    nonisolated private static func parentPID(_ pid: Int32) -> Int32? {
+        var info = kinfo_proc()
+        var size = MemoryLayout<kinfo_proc>.stride
+        var mib: [Int32] = [CTL_KERN, KERN_PROC, KERN_PROC_PID, pid]
+        guard sysctl(&mib, 4, &info, &size, nil, 0) == 0, size > 0
+        else { return nil }
+        let ppid = info.kp_eproc.e_ppid
+        return ppid > 0 ? ppid : nil
+    }
+
+    /// Collapse a helper bundle id onto its parent app. Vendors ship the
+    /// helper as a sibling bundle with its own id (`com.figma.Desktop.helper`,
+    /// Chromium-style `…helper.renderer`/`.gpu`) — strip from `.helper`
+    /// onward so it merges with the main app instead of forming a 2nd row.
+    /// Distinct products keep their own id (`company.thebrowser.dia` ≠
+    /// `company.thebrowser.browser.helper`).
+    nonisolated static func canonicalID(_ id: String) -> String {
+        if let r = id.range(of: ".helper",
+                            options: [.caseInsensitive, .backwards]) {
+            return String(id[id.startIndex..<r.lowerBound])
+        }
+        return id
+    }
+
+    /// The per-process label for an app's expanded breakdown — `comm`
+    /// ("claude", "Ghostty Helper"), never a versioned path component.
+    nonisolated private static func procLabel(pid: Int,
+                                              fallback: String) -> String {
+        procName(pid)
+            ?? executablePath(pid).map {
+                URL(fileURLWithPath: $0).lastPathComponent
+            }
+            ?? fallback
     }
 
     nonisolated private static func executablePath(_ pid: Int) -> String? {
@@ -138,13 +207,18 @@ final class NettopReader {
         return n > 0 ? String(cString: buf) : nil
     }
 
+    /// The *outermost* `.app` on the path. Electron/Chromium apps (Arc,
+    /// Figma, Dia, …) nest helper `.app` bundles inside the main one; the
+    /// top-level bundle is the real application, so all its helpers collapse
+    /// to a single row instead of one per "* Helper".
     nonisolated private static func enclosingAppBundle(_ path: String)
         -> URL? {
-        var url = URL(fileURLWithPath: path)
-        while url.pathComponents.count > 1 {
-            if url.pathExtension == "app" { return url }
-            url.deleteLastPathComponent()
-        }
-        return nil
+        let comps = URL(fileURLWithPath: path).pathComponents
+        guard let idx = comps.firstIndex(where: {
+            $0.hasSuffix(".app")
+        }) else { return nil }
+        var url = URL(fileURLWithPath: "/")
+        for c in comps[1...idx] { url.appendPathComponent(c) }
+        return url
     }
 }
