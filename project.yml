@@ -90,10 +90,9 @@ targets:
         # bundle identifier (sysextd matches service path to bundle id, else it
         # rejects with the generic "cannot allow apps outside /Applications").
         PRODUCT_NAME: "$(PRODUCT_BUNDLE_IDENTIFIER)"
-        # No main symbol: a NetworkExtension provider's entry point is
-        # _NSExtensionMain (supplied by the NetworkExtension framework).
-        # XcodeGen's system-extension product type doesn't inject it the way
-        # Apple's Xcode template does, so set it explicitly.
-        OTHER_LDFLAGS: "-e _NSExtensionMain"
+        # Entry point is the default `_main` (Sources/Extension/main.swift),
+        # which calls NEProvider.startSystemExtensionMode(). Do NOT force
+        # -e _NSExtensionMain: that is the appex/PlugInKit bootstrap and
+        # aborts in xpc_main for a system extension (no XPCService plist).
         # Apple Silicon host; arm64-only system extension is fully supported.
         EXCLUDED_ARCHS: x86_64
